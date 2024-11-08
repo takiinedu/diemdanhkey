@@ -1,43 +1,167 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quét mã QR</title>
+    <title>Quét mã QR và Điểm Danh</title>
+
     <!-- Nạp thư viện html5-qrcode từ CDNJS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" 
-            integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg==" 
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"
+        integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- Nạp Firebase SDK v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #reader {
+            margin: 0 auto;
+            width: 300px;
+            height: 300px;
+            border: 1px solid #ccc;
+        }
+
+        input {
+            display: block;
+            margin: 10px 0;
+            padding: 8px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        button {
+            display: block;
+            padding: 10px 20px;
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        img {
+            margin-top: 20px;
+            width: 200px;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Quét mã QR và hiển thị nội dung vào ô Input</h1>
+    <h1>Quét mã QR và Điểm Danh</h1>
 
     <!-- Khu vực hiển thị camera -->
-    <div id="reader" style="width: 300px; height: 300px; border: 1px solid #ccc;"></div>
+    <div id="reader"></div>
 
     <!-- Ô input để hiển thị nội dung QR code -->
-    <label for="qrResult">Nội dung mã QR:</label>
-    <input type="text" id="qrResult" readonly>
+    <label for="qrResult">Key điểm danh:</label>
+    <input type="text" id="qrResult">
+
+    <label for="msv">Mã sinh viên:</label>
+    <input type="text" id="msv">
+
+    <button id="Submit">Điểm danh</button>
+    <br><br>
+
+    <!-- Hiển thị ảnh QRCode mới -->
+    <img id="imgQR" alt="QR Code sẽ hiển thị ở đây" />
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Hàm xử lý khi quét mã QR thành công
-            function onScanSuccess(decodedText, decodedResult) {
-                document.getElementById('qrResult').value = decodedText;
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxIY1kKyUVYmjl-I3w2ivirYAPOBr-AhA",
+            authDomain: "diem-danh-key.firebaseapp.com",
+            projectId: "diem-danh-key",
+            storageBucket: "diem-danh-key.firebasestorage.app",
+            messagingSenderId: "38585885814",
+            appId: "1:38585885814:web:8e4e5d9a725278d0ba4ad7",
+            measurementId: "G-FQRH57RPZ2"
+        };
 
-                // Dừng quét sau khi đã thành công
-                html5QrcodeScanner.clear().then(() => {
-                    console.log("Đã dừng quét sau khi quét thành công.");
-                }).catch((err) => {
-                    console.error("Lỗi khi dừng quét:", err);
-                });
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const qrResult = document.getElementById('qrResult');
+        const msvInput = document.getElementById('msv');
+        const submitButton = document.getElementById('Submit');
+
+        // Hàm để quét mã QR
+        function onScanSuccess(decodedText, decodedResult) {
+            // Hiển thị giá trị QR đã quét lên ô input
+            qrResult.value = decodedText;
+
+            // Ngừng quét sau khi có kết quả
+            html5QrcodeScanner.clear();
+        }
+
+        // Hàm khởi tạo quét mã QR
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+            fps: 10,
+            qrbox: 250
+        });
+        html5QrcodeScanner.render(onScanSuccess);
+
+        // Xử lý khi nhấn nút điểm danh
+        submitButton.addEventListener('click', async () => {
+            const keyCode = qrResult.value.trim();
+            const msv = msvInput.value.trim();
+
+            if (!keyCode) {
+                alert("Vui lòng quét mã QR.");
+                return;
             }
 
-            // Tạo đối tượng Html5QrcodeScanner và bắt đầu quét mã QR
-            const html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader", { fps: 10, qrbox: 250 });
-            html5QrcodeScanner.render(onScanSuccess);
+            if (!msv) {
+                alert("Vui lòng nhập mã sinh viên.");
+                return;
+            }
+
+            // Kiểm tra key_code trong Firestore
+            const keyRef = db.collection('key').doc(keyCode);
+            const keyDoc = await keyRef.get();
+
+            if (keyDoc.exists) {
+                const keyData = keyDoc.data();
+
+                // Kiểm tra trường msv có trống không
+                if (!keyData.msv) {
+                    // Cập nhật msv vào key
+                    await keyRef.update({ msv: msv });
+
+                    // Kiểm tra mã sinh viên có trong list-sv chưa
+                    const listSvRef = db.collection('list-sv');
+                    const snapshot = await listSvRef.doc(msv).get();
+
+                    if (snapshot.exists) {
+                        alert("Mã sinh viên đã được sử dụng.");
+                    } else {
+                        // Thêm vào collection list-sv với Document ID là msv và trường diem_danh: "có"
+                        await listSvRef.doc(msv).set({ diem_danh: "có" });
+                        alert("Điểm danh thành công!");
+                    }
+                } else {
+                    alert("Key này đã có mã sinh viên.");
+                }
+            } else {
+                alert("Key không tồn tại.");
+            }
         });
     </script>
 </body>
+
 </html>
