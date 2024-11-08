@@ -3,9 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Tạo Key</title>
+
+    <!-- Nạp Firebase SDK v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        input, button {
+            margin-top: 10px;
+            padding: 10px;
+        }
+
+        input {
+            width: 200px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    
+
+    <h1>Tạo Key</h1>
+
+    <input type="text" id="num" placeholder="Số lượng key">
+    <button id="createKey">Tạo key</button>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxIY1kKyUVYmjl-I3w2ivirYAPOBr-AhA",
+            authDomain: "diem-danh-key.firebaseapp.com",
+            projectId: "diem-danh-key",
+            storageBucket: "diem-danh-key.firebasestorage.app",
+            messagingSenderId: "38585885814",
+            appId: "1:38585885814:web:8e4e5d9a725278d0ba4ad7",
+            measurementId: "G-FQRH57RPZ2"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Lấy các phần tử DOM
+        const numInput = document.getElementById('num');
+        const createKeyButton = document.getElementById('createKey');
+
+        // Hàm tạo key_code ngẫu nhiên
+        function generateKey() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const numbers = '0123456789';
+            let keyCode = '';
+
+            // Chọn ngẫu nhiên 3 chữ cái và 3 số
+            for (let i = 0; i < 3; i++) {
+                keyCode += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            for (let i = 0; i < 3; i++) {
+                keyCode += numbers.charAt(Math.floor(Math.random() * numbers.length));
+            }
+
+            // Xáo trộn chuỗi key_code
+            keyCode = keyCode.split('').sort(() => Math.random() - 0.5).join('');
+
+            return keyCode;
+        }
+
+        // Hàm kiểm tra sự trùng lặp của key_code trong Firestore
+        async function checkKeyExistence(keyCode) {
+            const keyRef = db.collection('key').doc(keyCode);
+            const doc = await keyRef.get();
+            return doc.exists;
+        }
+
+        // Hàm để tạo và upload key lên Firestore
+        createKeyButton.addEventListener('click', async () => {
+            const numKeys = parseInt(numInput.value.trim(), 10);
+
+            if (!numKeys || numKeys <= 0) {
+                alert("Vui lòng nhập số lượng key hợp lệ.");
+                return;
+            }
+
+            const generatedKeys = new Set();  // Dùng Set để lưu key_code không trùng lặp
+
+            for (let i = 0; i < numKeys; i++) {
+                let keyCode;
+
+                // Tiến hành tạo key_code không trùng lặp
+                do {
+                    keyCode = generateKey();
+                } while (generatedKeys.has(keyCode) || await checkKeyExistence(keyCode));  // Kiểm tra trùng lặp trong Firestore
+
+                generatedKeys.add(keyCode);
+
+                // Upload key vào Firestore
+                await db.collection('key').doc(keyCode).set({
+                    msv: ""  // Msv để trống khi tạo key
+                });
+
+                console.log(`Đã tạo key: ${keyCode}`);
+            }
+
+            alert(`${numKeys} key đã được tạo và tải lên Firestore!`);
+        });
+    </script>
+
 </body>
 </html>
