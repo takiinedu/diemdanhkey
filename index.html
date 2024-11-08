@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quét mã QR</title>
+    <!-- Thư viện html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <h1>Quét mã QR và hiển thị nội dung vào ô Input</h1>
+
+    <!-- Khu vực hiển thị camera -->
+    <div id="reader" style="width: 300px; height: 300px; border: 1px solid #ccc;"></div>
+
+    <!-- Ô input để hiển thị nội dung QR code -->
+    <label for="qrResult">Nội dung mã QR:</label>
+    <input type="text" id="qrResult" readonly>
+
+    <script>
+        // Kiểm tra xem thư viện html5-qrcode đã sẵn sàng hay chưa
+        document.addEventListener("DOMContentLoaded", function() {
+            if (typeof Html5QrcodeScanner !== "undefined") {
+                // Hàm xử lý khi quét mã QR thành công
+                function onScanSuccess(decodedText, decodedResult) {
+                    // Đưa nội dung mã QR vào ô input
+                    document.getElementById('qrResult').value = decodedText;
+
+                    // Dừng quét sau khi đã thành công
+                    html5QrcodeScanner.clear().then(() => {
+                        console.log("Đã dừng quét sau khi quét thành công.");
+                    }).catch((err) => {
+                        console.error("Lỗi khi dừng quét:", err);
+                    });
+                }
+
+                // Tạo đối tượng Html5QrcodeScanner để bắt đầu quét mã QR
+                const html5QrcodeScanner = new Html5QrcodeScanner(
+                    "reader", { fps: 10, qrbox: 250 });
+                
+                // Bắt đầu quét mã QR
+                html5QrcodeScanner.render(onScanSuccess);
+            } else {
+                console.error("Thư viện html5-qrcode chưa được tải đúng cách.");
+            }
+        });
+    </script>
+</body>
+</html>
